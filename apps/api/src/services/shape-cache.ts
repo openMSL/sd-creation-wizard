@@ -4,7 +4,7 @@
  */
 
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
-import { join, relative, basename } from "node:path";
+import { join } from "node:path";
 import { extractShaclModel } from "@sd-creation-wizard/shacl-core";
 import type { ShaclModel } from "@sd-creation-wizard/shacl-core";
 

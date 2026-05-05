@@ -8,7 +8,7 @@ import { RdfNavigator } from "./rdf-navigator.js";
 import { RDF, SH } from "./namespaces.js";
 import { DataFactory } from "n3";
 
-const { namedNode, literal } = DataFactory;
+const { namedNode } = DataFactory;
 
 describe("RdfNavigator", () => {
   let store: Store;

@@ -1,49 +1,49 @@
 {
-    "prefixList": [
+  "prefixList": [
+    {
+      "alias": "schema",
+      "url": "http://schema.org/"
+    },
+    {
+      "alias": "ex",
+      "url": "http://w3id.org/gaia-x/ex#"
+    },
+    {
+      "alias": "sh",
+      "url": "http://www.w3.org/ns/shacl#"
+    }
+  ],
+  "shapes": [
+    {
+      "schema": "HospitalShape",
+      "targetClassPrefix": "schema",
+      "targetClassName": "hospital",
+      "constraints": [
         {
-            "alias": "schema",
-            "url": "http://schema.org/"
+          "path": {
+            "prefix": "schema",
+            "value": "person"
+          }
         },
         {
-            "alias": "ex",
-            "url": "http://w3id.org/gaia-x/ex#"
+          "path": {
+            "prefix": "schema",
+            "value": "telephone"
+          }
         },
         {
-            "alias": "sh",
-            "url": "http://www.w3.org/ns/shacl#"
-        }
-    ],
-    "shapes": [
+          "path": {
+            "prefix": "schema",
+            "value": "address"
+          }
+        },
         {
-            "schema": "HospitalShape",
-            "targetClassPrefix": "schema",
-            "targetClassName": "hospital",
-            "constraints": [
-                {
-                    "path": {
-                        "prefix": "schema",
-                        "value": "person"
-                    }
-                },
-                {
-                    "path": {
-                        "prefix": "schema",
-                        "value": "telephone"
-                    }
-                },
-                {
-                    "path": {
-                        "prefix": "schema",
-                        "value": "address"
-                    }
-                },
-                {
-                    "path": {
-                        "prefix": "schema",
-                        "value": "name"
-                    }
-                }
-            ]
+          "path": {
+            "prefix": "schema",
+            "value": "name"
+          }
         }
-    ]
+      ]
+    }
+  ]
 }

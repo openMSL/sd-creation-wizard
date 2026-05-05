@@ -33,7 +33,7 @@ describe("POST /convertFile", () => {
     const res = await app.request("/convertFile", { method: "POST", body: formData });
     expect(res.status).toBe(200);
 
-    const json = await res.json();
+    const json = (await res.json()) as Record<string, any>;
     expect(json.prefixList).toBeDefined();
     expect(json.shapes).toBeInstanceOf(Array);
     expect(json.shapes).toHaveLength(1);
@@ -85,7 +85,7 @@ describe("POST /convertFile", () => {
     const res = await app.request("/convertFile", { method: "POST", body: formData });
     expect(res.status).toBe(200);
 
-    const json = await res.json();
+    const json = (await res.json()) as Record<string, any>;
     expect(json.shapes).toHaveLength(2);
     const schemas = json.shapes.map((s: { schema: string }) => s.schema).sort();
     expect(schemas).toContain("ShapeA");
@@ -111,7 +111,7 @@ describe("POST /convertFile", () => {
     const res = await app.request("/convertFile", { method: "POST", body: formData });
     expect(res.status).toBe(200);
 
-    const json = await res.json();
+    const json = (await res.json()) as Record<string, any>;
     const inValues = json.shapes[0].constraints[0].in;
     expect(inValues).toHaveLength(3);
     expect(inValues.map((v: { value: string }) => v.value)).toEqual(["red", "green", "blue"]);
@@ -140,7 +140,7 @@ describe("POST /convertFile", () => {
     const res = await app.request("/convertFile", { method: "POST", body: formData });
     expect(res.status).toBe(200);
 
-    const json = await res.json();
+    const json = (await res.json()) as Record<string, any>;
     const orValues = json.shapes[0].constraints[0].or;
     expect(orValues).toHaveLength(2);
   });
@@ -167,7 +167,7 @@ describe("POST /convertFile", () => {
     const res = await app.request("/convertFile", { method: "POST", body: formData });
     expect(res.status).toBe(200);
 
-    const json = await res.json();
+    const json = (await res.json()) as Record<string, any>;
     // Find the parent shape
     const parent = json.shapes.find((s: { schema: string }) => s.schema === "ParentShape");
     expect(parent).toBeDefined();
@@ -195,7 +195,7 @@ describe("POST /convertAndPrefillFile", () => {
 
   it("returns both shaclModel and matchedSubjects", async () => {
     const jsonLd = JSON.stringify({
-      "@context": { "ex": "http://example.org/" },
+      "@context": { ex: "http://example.org/" },
       "@type": "ex:Person",
       "http://example.org/name": "Alice",
       "http://example.org/age": 30,
@@ -208,7 +208,7 @@ describe("POST /convertAndPrefillFile", () => {
     const res = await app.request("/convertAndPrefillFile", { method: "POST", body: formData });
     expect(res.status).toBe(200);
 
-    const json = await res.json();
+    const json = (await res.json()) as Record<string, any>;
     expect(json.shaclModel).toBeDefined();
     expect(json.shaclModel.shapes).toHaveLength(1);
     expect(json.matchedSubjects).toBeDefined();
@@ -234,7 +234,10 @@ describe("POST /convertAndPrefillFile", () => {
 
   it("handles @value objects in JSON-LD", async () => {
     const jsonLd = JSON.stringify({
-      "http://example.org/name": { "@value": "Bob", "@type": "http://www.w3.org/2001/XMLSchema#string" },
+      "http://example.org/name": {
+        "@value": "Bob",
+        "@type": "http://www.w3.org/2001/XMLSchema#string",
+      },
     });
 
     const formData = new FormData();
@@ -244,7 +247,7 @@ describe("POST /convertAndPrefillFile", () => {
     const res = await app.request("/convertAndPrefillFile", { method: "POST", body: formData });
     expect(res.status).toBe(200);
 
-    const json = await res.json();
+    const json = (await res.json()) as Record<string, any>;
     expect(json.matchedSubjects["http://example.org/name"]).toBe("Bob");
   });
 
@@ -260,7 +263,7 @@ describe("POST /convertAndPrefillFile", () => {
     const res = await app.request("/convertAndPrefillFile", { method: "POST", body: formData });
     expect(res.status).toBe(200);
 
-    const json = await res.json();
+    const json = (await res.json()) as Record<string, any>;
     expect(Object.keys(json.matchedSubjects)).toHaveLength(0);
   });
 });

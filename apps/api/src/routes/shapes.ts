@@ -76,9 +76,7 @@ shapesRoutes.get("/getSearchQuery/:ecoSystem/:query", (c) => {
 
   const results: Record<string, string[]> = {};
   for (const [category, files] of Object.entries(ecosystemShapes)) {
-    const matching = (files as string[]).filter((f) =>
-      f.toLowerCase().includes(query)
-    );
+    const matching = (files as string[]).filter((f) => f.toLowerCase().includes(query));
     if (matching.length > 0) {
       results[category] = matching;
     }

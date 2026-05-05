@@ -397,11 +397,7 @@ function readMultiLanguageProperty(
 /**
  * Sort shapes by depth (leaf shapes first) to match Java API behavior.
  */
-function sortShapesByDepth(
-  shapes: VicShape[],
-  nav: RdfNavigator,
-  _store: Store
-): VicShape[] {
+function sortShapesByDepth(shapes: VicShape[], _nav: RdfNavigator, _store: Store): VicShape[] {
   // Calculate depth: shapes referenced as children have higher depth
   const depthMap = new Map<string, number>();
 

@@ -6,9 +6,7 @@
     "rootDir": "src",
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
   },
-  "references": [
-    { "path": "../../packages/shacl-core" }
-  ],
+  "references": [{ "path": "../../packages/shacl-core" }],
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

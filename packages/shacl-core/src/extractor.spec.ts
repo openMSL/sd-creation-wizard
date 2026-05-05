@@ -61,7 +61,9 @@ function lenientMatch(actual: unknown, expected: unknown, path = ""): string[] {
         }
       }
       if (!found) {
-        errors.push(`${path}[${i}]: no matching item found in actual for ${JSON.stringify(expected[i])}`);
+        errors.push(
+          `${path}[${i}]: no matching item found in actual for ${JSON.stringify(expected[i])}`
+        );
       }
     }
     return errors;

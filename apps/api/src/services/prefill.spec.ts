@@ -116,7 +116,7 @@ describe("prefillFromJsonLd", () => {
 
   it("skips @context and other JSON-LD keywords", () => {
     const jsonLd = JSON.stringify({
-      "@context": { "ex": "http://example.org/" },
+      "@context": { ex: "http://example.org/" },
       "@type": "ex:Person",
       "@id": "http://example.org/people/1",
       "http://example.org/firstName": "Test",

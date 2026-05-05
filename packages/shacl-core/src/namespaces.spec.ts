@@ -70,9 +70,7 @@ describe("localName()", () => {
 
 describe("namespace()", () => {
   it("extracts namespace up to and including hash", () => {
-    expect(namespace("http://www.w3.org/ns/shacl#NodeShape")).toBe(
-      "http://www.w3.org/ns/shacl#"
-    );
+    expect(namespace("http://www.w3.org/ns/shacl#NodeShape")).toBe("http://www.w3.org/ns/shacl#");
   });
 
   it("extracts namespace up to and including last slash", () => {

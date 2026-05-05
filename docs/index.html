@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SD Creation Wizard</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 48rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        line-height: 1.6;
+      }
+      h1 {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 0.5rem;
+      }
+      code {
+        background: #f4f4f4;
+        padding: 0.15rem 0.4rem;
+        border-radius: 3px;
+      }
+      pre {
+        background: #f4f4f4;
+        padding: 1rem;
+        border-radius: 6px;
+        overflow-x: auto;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 0.5rem;
+        text-align: left;
+      }
+      th {
+        background: #f8f8f8;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SD Creation Wizard</h1>
+    <p>SHACL-based form model API for the ENVITED-X metadata enrichment pipeline.</p>
+
+    <h2>API Reference</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Path</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>POST</td>
+          <td><code>/convertFile</code></td>
+          <td>Upload a SHACL TTL file, get a form model JSON back</td>
+        </tr>
+        <tr>
+          <td>POST</td>
+          <td><code>/convertAndPrefillFile</code></td>
+          <td>Same as above but prefill values from an existing JSON-LD</td>
+        </tr>
+        <tr>
+          <td>GET</td>
+          <td><code>/getAvailableShapes</code></td>
+          <td>List all cached shape schemas</td>
+        </tr>
+        <tr>
+          <td>GET</td>
+          <td><code>/getAvailableShapesCategorized</code></td>
+          <td>Shapes grouped by ontology prefix</td>
+        </tr>
+        <tr>
+          <td>GET</td>
+          <td><code>/getJSON/:schema</code></td>
+          <td>Retrieve a cached form model by schema name</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Form Model Structure</h2>
+    <pre>
+{
+  "shapes": [
+    {
+      "schema": "ShapeName",
+      "targetClass": "https://example.org/Class",
+      "constraints": [
+        {
+          "path": { "prefix": "ns", "value": "propertyName" },
+          "name": "Property Label",
+          "datatype": { "prefix": "xsd", "value": "string" },
+          "minCount": 1,
+          "maxCount": 1,
+          "order": 0,
+          "description": { "value": "Help text" },
+          "in": [],
+          "or": [],
+          "children": null,
+          "validations": []
+        }
+      ]
+    }
+  ]
+}</pre
+    >
+
+    <h2>Architecture</h2>
+    <pre>
+┌─────────────────────────────────────────┐
+│  apps/api (Hono :8080)                  │
+│    POST /convertFile ──┐                │
+│    POST /convertAndPrefillFile ──┐      │
+│                                  ▼      │
+│  packages/shacl-core                    │
+│    N3.js store ─► RDF Navigator         │
+│    ─► Extractor ─► Form Model JSON      │
+└─────────────────────────────────────────┘</pre
+    >
+
+    <h2>Links</h2>
+    <ul>
+      <li><a href="https://github.com/openMSL/sd-creation-wizard">Source code</a></li>
+      <li><a href="https://github.com/openMSL/sl-5-8-asset-tools">Asset tools pipeline</a></li>
+    </ul>
+  </body>
+</html>

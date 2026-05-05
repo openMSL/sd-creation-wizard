@@ -11,13 +11,31 @@
     "dev": "turbo run dev",
     "test": "turbo run test",
     "check-types": "turbo run check-types",
-    "lint": "turbo run lint",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "clean": "turbo run clean",
     "build:api": "turbo run build --filter=@sd-creation-wizard/api...",
-    "build:frontend": "turbo run build --filter=@sd-creation-wizard/frontend..."
+    "build:frontend": "turbo run build --filter=@sd-creation-wizard/frontend...",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,mts}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,html}": [
+      "prettier --write"
+    ]
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.3.0",
+    "globals": "^17.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.4.0",
     "turbo": "^2.3.0",
-    "prettier": "^3.4.0"
+    "typescript-eslint": "^8.59.2"
   }
 }
