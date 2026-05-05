@@ -420,13 +420,19 @@ function sortShapesByDepth(
 
 /**
  * Calculate the nesting depth of a shape.
+ * Uses a visiting set to detect cycles (self-referencing shapes).
  */
 function calculateDepth(
   schemaUri: string,
   shapes: VicShape[],
-  depthMap: Map<string, number>
+  depthMap: Map<string, number>,
+  visiting?: Set<string>
 ): number {
   if (depthMap.has(schemaUri)) return depthMap.get(schemaUri)!;
+
+  const currentVisiting = visiting ?? new Set<string>();
+  if (currentVisiting.has(schemaUri)) return 0; // cycle detected
+  currentVisiting.add(schemaUri);
 
   const shape = shapes.find((s) => s.schema === schemaUri);
   if (!shape) return 0;
@@ -434,7 +440,7 @@ function calculateDepth(
   let maxChildDepth = 0;
   for (const constraint of shape.constraints) {
     if (constraint.children) {
-      const childDepth = calculateDepth(constraint.children, shapes, depthMap);
+      const childDepth = calculateDepth(constraint.children, shapes, depthMap, currentVisiting);
       maxChildDepth = Math.max(maxChildDepth, childDepth + 1);
     }
   }
