@@ -29,13 +29,11 @@
     ]
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@sd-creation-wizard/eslint-config": "workspace:*",
     "eslint": "^10.3.0",
-    "globals": "^17.6.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.4.0",
-    "turbo": "^2.3.0",
-    "typescript-eslint": "^8.59.2"
+    "turbo": "^2.3.0"
   }
 }

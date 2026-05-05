@@ -1,0 +1,12 @@
+{
+  "name": "@sd-creation-wizard/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "globals": "^17.6.0",
+    "typescript-eslint": "^8.59.2"
+  }
+}
