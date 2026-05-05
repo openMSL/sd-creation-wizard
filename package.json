@@ -1,0 +1,23 @@
+{
+  "name": "sd-creation-wizard",
+  "private": true,
+  "packageManager": "pnpm@10.33.3",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "check-types": "turbo run check-types",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "build:api": "turbo run build --filter=@sd-creation-wizard/api...",
+    "build:frontend": "turbo run build --filter=@sd-creation-wizard/frontend..."
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "prettier": "^3.4.0"
+  }
+}

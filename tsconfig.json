@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shacl-core" },
+    { "path": "./packages/testing" },
+    { "path": "./apps/api" }
+  ]
+}

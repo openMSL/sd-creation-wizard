@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.turbo/
+.angular/
+coverage/
+*.tsbuildinfo
+pnpm-debug.log*
+.env
+.env.local

@@ -1,0 +1,33 @@
+{
+  "name": "@sd-creation-wizard/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "check-types": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "@sd-creation-wizard/shacl-core": "workspace:*",
+    "hono": "^4.12.0",
+    "jsonld": "^9.0.0",
+    "n3": "^2.0.3",
+    "simple-git": "^3.36.0"
+  },
+  "devDependencies": {
+    "@sd-creation-wizard/typescript-config": "workspace:*",
+    "@types/jsonld": "^1.5.0",
+    "@types/n3": "^1.26.1",
+    "@types/node": "^25.6.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "rimraf": "^6.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}
