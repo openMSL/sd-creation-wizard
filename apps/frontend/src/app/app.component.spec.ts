@@ -14,10 +14,10 @@ describe("AppComponent", () => {
     expect(app).toBeTruthy();
   });
 
-  it("should render title", () => {
+  it("should render toolbar title", () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector("h1")?.textContent).toContain("SD Creation Wizard");
+    expect(compiled.querySelector("mat-toolbar")?.textContent).toContain("SD Creation Wizard");
   });
 });
