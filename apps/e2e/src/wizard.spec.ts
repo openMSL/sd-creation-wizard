@@ -67,8 +67,9 @@ test.describe("SD Creation Wizard", () => {
     // Navigate to review step
     await page.getByRole("button", { name: "Next" }).click();
 
-    // Wait for review step content
-    await expect(page.getByText("Review")).toBeVisible();
+    // Wait for review step to be active
+    const reviewHeader = page.locator('mat-step-header:has-text("Review & Export")');
+    await expect(reviewHeader).toBeVisible();
 
     // Click export
     const downloadPromise = page.waitForEvent("download");
