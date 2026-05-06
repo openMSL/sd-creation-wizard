@@ -3,48 +3,104 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SD Creation Wizard</title>
+    <title>SD Creation Wizard — Documentation</title>
     <style>
       body {
         font-family: system-ui, sans-serif;
-        max-width: 48rem;
+        max-width: 52rem;
         margin: 2rem auto;
         padding: 0 1rem;
         line-height: 1.6;
+        color: #1a1a1a;
       }
       h1 {
-        border-bottom: 1px solid #ddd;
+        border-bottom: 2px solid #0366d6;
         padding-bottom: 0.5rem;
+      }
+      h2 {
+        margin-top: 2rem;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.3rem;
       }
       code {
         background: #f4f4f4;
         padding: 0.15rem 0.4rem;
         border-radius: 3px;
+        font-size: 0.9em;
       }
       pre {
         background: #f4f4f4;
         padding: 1rem;
         border-radius: 6px;
         overflow-x: auto;
+        font-size: 0.85em;
       }
       table {
         border-collapse: collapse;
         width: 100%;
+        margin: 1rem 0;
       }
       th,
       td {
         border: 1px solid #ddd;
-        padding: 0.5rem;
+        padding: 0.5rem 0.75rem;
         text-align: left;
       }
       th {
         background: #f8f8f8;
       }
+      .badge {
+        display: inline-block;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75em;
+        font-weight: 600;
+        margin-left: 0.5rem;
+      }
+      .badge-ng {
+        background: #dd0031;
+        color: white;
+      }
+      .badge-ts {
+        background: #3178c6;
+        color: white;
+      }
     </style>
   </head>
   <body>
     <h1>SD Creation Wizard</h1>
-    <p>SHACL-based form model API for the ENVITED-X metadata enrichment pipeline.</p>
+    <p>
+      SHACL-driven metadata wizard for the ENVITED-X ecosystem.
+      <span class="badge badge-ts">TypeScript</span>
+      <span class="badge badge-ng">Angular 19</span>
+    </p>
+
+    <h2>Overview</h2>
+    <p>
+      Parses SHACL/OWL ontologies (Turtle format) and renders dynamic form UIs for creating JSON-LD
+      metadata assets. Used by the
+      <a href="https://github.com/openMSL/sl-5-8-asset-tools">sl-5-8-asset-tools</a>
+      pipeline for metadata enrichment.
+    </p>
+
+    <h2>Architecture</h2>
+    <pre>
+┌────────────────────────────────────────────────────────────┐
+│  Frontend (Angular 19, port 4200)                          │
+│    Upload TTL → Material Stepper → ngx-formly forms        │
+│    → Review JSON-LD → Export                               │
+│                      │ /api proxy                          │
+├──────────────────────▼─────────────────────────────────────┤
+│  API (Hono, port 8080)                                     │
+│    /convertFile         → parse → ShaclModel               │
+│    /convertAndPrefillFile → parse + match JSON-LD values   │
+│    /getAvailableShapes  → cached ontology list             │
+│                      │                                     │
+├──────────────────────▼─────────────────────────────────────┤
+│  shacl-core (N3.js)                                        │
+│    RDF Store → Navigator → Extractor → Form Model          │
+└────────────────────────────────────────────────────────────┘</pre
+    >
 
     <h2>API Reference</h2>
     <table>
@@ -64,7 +120,7 @@
         <tr>
           <td>POST</td>
           <td><code>/convertAndPrefillFile</code></td>
-          <td>Same as above but prefill values from an existing JSON-LD</td>
+          <td>Parse SHACL + prefill form values from existing JSON-LD</td>
         </tr>
         <tr>
           <td>GET</td>
@@ -84,50 +140,108 @@
       </tbody>
     </table>
 
-    <h2>Form Model Structure</h2>
+    <h2>Form Model (ShaclModel)</h2>
     <pre>
 {
   "shapes": [
     {
-      "schema": "ShapeName",
-      "targetClass": "https://example.org/Class",
+      "schema": "HdMapShape",
+      "targetClass": "https://w3id.org/ascs-ev/envited-x/hdmap/v6/HdMap",
+      "targetClassName": "HdMap",
       "constraints": [
         {
-          "path": { "prefix": "ns", "value": "propertyName" },
-          "name": "Property Label",
+          "path": { "prefix": "hdmap", "value": "hasFormat" },
+          "name": "Format",
           "datatype": { "prefix": "xsd", "value": "string" },
           "minCount": 1,
           "maxCount": 1,
-          "order": 0,
-          "description": { "value": "Help text" },
-          "in": [],
+          "order": 1,
+          "description": { "en": "The file format" },
+          "in": [
+            { "prefix": "hdmap", "value": "OpenDRIVE" },
+            { "prefix": "hdmap", "value": "Lanelet2" }
+          ],
           "or": [],
           "children": null,
           "validations": []
         }
       ]
     }
+  ],
+  "prefixList": [
+    { "prefix": "hdmap", "namespace": "https://w3id.org/ascs-ev/envited-x/hdmap/v6/" }
   ]
 }</pre
     >
 
-    <h2>Architecture</h2>
+    <h2>Frontend Field Types</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>SHACL Constraint</th>
+          <th>Formly Type</th>
+          <th>Rendered As</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>sh:in [...]</code></td>
+          <td>select</td>
+          <td>Material dropdown (multi if maxCount &gt; 1)</td>
+        </tr>
+        <tr>
+          <td><code>sh:or [...]</code></td>
+          <td>union-field</td>
+          <td>Radio selector → conditional sub-form</td>
+        </tr>
+        <tr>
+          <td><code>sh:maxCount &gt; 1</code></td>
+          <td>repeat</td>
+          <td>Dynamic array with add/remove</td>
+        </tr>
+        <tr>
+          <td><code>xsd:boolean</code></td>
+          <td>checkbox</td>
+          <td>Material checkbox</td>
+        </tr>
+        <tr>
+          <td><code>xsd:integer / xsd:decimal</code></td>
+          <td>number</td>
+          <td>Number input with min/max range</td>
+        </tr>
+        <tr>
+          <td><code>xsd:date / xsd:dateTime</code></td>
+          <td>datepicker</td>
+          <td>Material datepicker</td>
+        </tr>
+        <tr>
+          <td><code>xsd:anyURI / sh:nodeKind sh:IRI</code></td>
+          <td>iri</td>
+          <td>URL input with link icon</td>
+        </tr>
+        <tr>
+          <td><code>xsd:string</code> (default)</td>
+          <td>input</td>
+          <td>Material text input</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Development</h2>
     <pre>
-┌─────────────────────────────────────────┐
-│  apps/api (Hono :8080)                  │
-│    POST /convertFile ──┐                │
-│    POST /convertAndPrefillFile ──┐      │
-│                                  ▼      │
-│  packages/shacl-core                    │
-│    N3.js store ─► RDF Navigator         │
-│    ─► Extractor ─► Form Model JSON      │
-└─────────────────────────────────────────┘</pre
+pnpm dev              # Start API + frontend concurrently
+pnpm test             # Unit tests (vitest + karma)
+pnpm test:e2e         # Playwright E2E tests
+pnpm lint             # ESLint
+pnpm format:check     # Prettier
+pnpm check-types      # TypeScript</pre
     >
 
     <h2>Links</h2>
     <ul>
       <li><a href="https://github.com/openMSL/sd-creation-wizard">Source code</a></li>
       <li><a href="https://github.com/openMSL/sl-5-8-asset-tools">Asset tools pipeline</a></li>
+      <li><a href="https://w3id.org/ascs-ev/envited-x/">ENVITED-X ontologies</a></li>
     </ul>
   </body>
 </html>
