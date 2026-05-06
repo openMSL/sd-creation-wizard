@@ -1,4 +1,4 @@
-import { Component, inject, signal } from "@angular/core";
+import { Component, inject, signal, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MatStepperModule } from "@angular/material/stepper";
@@ -13,6 +13,7 @@ import { ShapeApiService } from "../../core/services/shape-api.service";
 import { ShapeToFormlyService } from "../../core/services/shape-to-formly.service";
 import { JsonLdSerializerService } from "../../core/services/jsonld-serializer.service";
 import { JsonLdPrefillService } from "../../core/services/jsonld-prefill.service";
+import { SessionService } from "../../core/services/session.service";
 import { FormlyStep, ShaclModel } from "../../core/models/shacl.model";
 import { FileUploadComponent } from "./file-upload.component";
 import { ReviewStepComponent } from "./review-step.component";
@@ -108,11 +109,12 @@ import { ReviewStepComponent } from "./review-step.component";
     `,
   ],
 })
-export class ShapeWizardComponent {
+export class ShapeWizardComponent implements OnInit {
   private readonly api = inject(ShapeApiService);
   private readonly mapper = inject(ShapeToFormlyService);
   private readonly serializer = inject(JsonLdSerializerService);
   private readonly prefiller = inject(JsonLdPrefillService);
+  private readonly session = inject(SessionService);
   private readonly snackBar = inject(MatSnackBar);
 
   model = signal<ShaclModel | null>(null);
@@ -120,8 +122,75 @@ export class ShapeWizardComponent {
   stepModels = signal<Record<string, unknown>[]>([]);
   loading = signal(false);
   shaclFile = signal<File | null>(null);
+  sessionMode = signal(false);
 
   generatedJsonLd = signal<object | null>(null);
+
+  ngOnInit(): void {
+    this.checkForSession();
+  }
+
+  /**
+   * On startup, check if the API has an active session (pipeline handoff).
+   * If so, auto-load SHACL + prefill without user uploading files.
+   */
+  private checkForSession(): void {
+    this.session.getSession().subscribe({
+      next: (state) => {
+        if (!state.active || !state.shaclContent) return;
+
+        this.sessionMode.set(true);
+        this.loading.set(true);
+
+        // Build a synthetic File from session content for the API call
+        const shaclBlob = new File([state.shaclContent], "shapes.ttl", { type: "text/turtle" });
+
+        if (state.jsonLdContent) {
+          const jsonLdBlob = new File([state.jsonLdContent], "prefill.json", {
+            type: "application/json",
+          });
+          this.api.convertAndPrefill(shaclBlob, jsonLdBlob).subscribe({
+            next: (result) => {
+              this.model.set(result.shaclModel);
+              const formSteps = this.mapper.toSteps(result.shaclModel);
+              this.steps.set(formSteps);
+              const prefilled = this.prefiller.prefill(
+                result.matchedSubjects,
+                formSteps,
+                result.shaclModel
+              );
+              this.stepModels.set(prefilled);
+              this.loading.set(false);
+              this.snackBar.open("Form loaded from pipeline — edit and export when ready", "OK", {
+                duration: 5000,
+              });
+            },
+            error: () => {
+              this.loading.set(false);
+              this.sessionMode.set(false);
+            },
+          });
+        } else {
+          this.api.convert(shaclBlob).subscribe({
+            next: (result) => {
+              this.model.set(result);
+              const formSteps = this.mapper.toSteps(result);
+              this.steps.set(formSteps);
+              this.stepModels.set(formSteps.map(() => ({})));
+              this.loading.set(false);
+            },
+            error: () => {
+              this.loading.set(false);
+              this.sessionMode.set(false);
+            },
+          });
+        }
+      },
+      error: () => {
+        // No session available — normal manual mode
+      },
+    });
+  }
 
   onFileSelected(file: File): void {
     this.shaclFile.set(file);
@@ -191,6 +260,29 @@ export class ShapeWizardComponent {
     const jsonLd = this.serializer.serialize(formValues, model);
     this.generatedJsonLd.set(jsonLd);
 
+    if (this.sessionMode()) {
+      // In session mode, export to the pipeline output path via API
+      this.session.exportToSession(jsonLd).subscribe({
+        next: (result) => {
+          this.snackBar.open(
+            `Exported to pipeline: ${result.path} — you can close this tab`,
+            "Close",
+            { duration: 10000 }
+          );
+        },
+        error: () => {
+          this.snackBar.open("Export failed — downloading as fallback", "Close", {
+            duration: 5000,
+          });
+          this.downloadJsonLd(jsonLd);
+        },
+      });
+    } else {
+      this.downloadJsonLd(jsonLd);
+    }
+  }
+
+  private downloadJsonLd(jsonLd: object): void {
     const blob = new Blob([JSON.stringify(jsonLd, null, 2)], {
       type: "application/ld+json",
     });

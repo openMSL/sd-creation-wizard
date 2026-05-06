@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { shapesRoutes } from "./routes/shapes.js";
 import { convertRoutes } from "./routes/convert.js";
+import { sessionRoutes } from "./routes/session.js";
 import { errorHandler } from "./middleware/error-handler.js";
 
 const app = new Hono();
@@ -14,6 +15,7 @@ app.onError(errorHandler);
 
 app.route("/", shapesRoutes);
 app.route("/", convertRoutes);
+app.route("/", sessionRoutes);
 
 const port = parseInt(process.env["PORT"] ?? "8080", 10);
 
