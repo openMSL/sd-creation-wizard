@@ -21,7 +21,7 @@ export default defineConfig({
   webServer: [
     {
       command: "pnpm --filter @sd-creation-wizard/api run dev",
-      port: 8080,
+      port: 3007,
       reuseExistingServer: !process.env["CI"],
       cwd: "../..",
     },

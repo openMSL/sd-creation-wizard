@@ -12,7 +12,7 @@ ontologies and renders dynamic form UIs for creating JSON-LD metadata assets.
 │    → Export JSON-LD                                            │
 │                          │ /api proxy                          │
 ├──────────────────────────▼─────────────────────────────────────┤
-│  apps/api (Hono, :8080)                                        │
+│  apps/api (Hono, :3007)                                        │
 │    POST /convertFile → parse SHACL → form model JSON           │
 │    POST /convertAndPrefillFile → parse + prefill from JSON-LD  │
 │    GET  /getAvailableShapes → cached ontology list             │
@@ -40,8 +40,8 @@ pnpm test
 
 ```bash
 pnpm dev              # Start API + frontend concurrently
-pnpm dev:api          # Start API only (port 8080)
-pnpm dev:frontend     # Start frontend only (port 4200, proxies /api → 8080)
+pnpm dev:api          # Start API only (port 3007)
+pnpm dev:frontend     # Start frontend only (port 4200, proxies /api → 3007)
 pnpm test             # Run all unit tests (vitest + karma)
 pnpm test:e2e         # Run Playwright E2E tests
 pnpm lint             # ESLint

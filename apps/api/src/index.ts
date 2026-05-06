@@ -17,7 +17,7 @@ app.route("/", shapesRoutes);
 app.route("/", convertRoutes);
 app.route("/", sessionRoutes);
 
-const port = parseInt(process.env["PORT"] ?? "8080", 10);
+const port = parseInt(process.env["PORT"] ?? "3007", 10);
 
 console.log(`SD Creation Wizard API starting on port ${port}`);
 serve({ fetch: app.fetch, port });
