@@ -12,6 +12,7 @@ import { FormlyMaterialModule } from "@ngx-formly/material";
 import { ShapeApiService } from "../../core/services/shape-api.service";
 import { ShapeToFormlyService } from "../../core/services/shape-to-formly.service";
 import { JsonLdSerializerService } from "../../core/services/jsonld-serializer.service";
+import { JsonLdPrefillService } from "../../core/services/jsonld-prefill.service";
 import { FormlyStep, ShaclModel } from "../../core/models/shacl.model";
 import { FileUploadComponent } from "./file-upload.component";
 import { ReviewStepComponent } from "./review-step.component";
@@ -42,6 +43,16 @@ import { ReviewStepComponent } from "./review-step.component";
           label="Select SHACL file"
           (fileSelected)="onFileSelected($event)"
         />
+        @if (shaclFile()) {
+          <div class="prefill-section">
+            <p>Optionally upload existing JSON-LD to prefill the form:</p>
+            <app-file-upload
+              accept=".json,.jsonld"
+              label="Select JSON-LD file (optional)"
+              (fileSelected)="onPrefillFileSelected($event)"
+            />
+          </div>
+        }
         @if (loading()) {
           <mat-progress-bar mode="indeterminate" />
         }
@@ -81,6 +92,11 @@ import { ReviewStepComponent } from "./review-step.component";
         text-align: center;
         padding: 32px;
       }
+      .prefill-section {
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid #e0e0e0;
+      }
       .step-actions {
         margin-top: 24px;
         display: flex;
@@ -96,16 +112,54 @@ export class ShapeWizardComponent {
   private readonly api = inject(ShapeApiService);
   private readonly mapper = inject(ShapeToFormlyService);
   private readonly serializer = inject(JsonLdSerializerService);
+  private readonly prefiller = inject(JsonLdPrefillService);
   private readonly snackBar = inject(MatSnackBar);
 
   model = signal<ShaclModel | null>(null);
   steps = signal<FormlyStep[]>([]);
   stepModels = signal<Record<string, unknown>[]>([]);
   loading = signal(false);
+  shaclFile = signal<File | null>(null);
 
   generatedJsonLd = signal<object | null>(null);
 
   onFileSelected(file: File): void {
+    this.shaclFile.set(file);
+    this.loadModel(file);
+  }
+
+  onPrefillFileSelected(jsonLdFile: File): void {
+    const shacl = this.shaclFile();
+    if (!shacl) return;
+
+    this.loading.set(true);
+    this.api.convertAndPrefill(shacl, jsonLdFile).subscribe({
+      next: (result) => {
+        this.model.set(result.shaclModel);
+        const formSteps = this.mapper.toSteps(result.shaclModel);
+        this.steps.set(formSteps);
+
+        const prefilled = this.prefiller.prefill(
+          result.matchedSubjects,
+          formSteps,
+          result.shaclModel
+        );
+        this.stepModels.set(prefilled);
+        this.loading.set(false);
+        this.snackBar.open("Form prefilled from JSON-LD", "Close", {
+          duration: 3000,
+        });
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.snackBar.open(`Prefill error: ${err.message || "Failed to process"}`, "Close", {
+          duration: 5000,
+        });
+      },
+    });
+  }
+
+  private loadModel(file: File): void {
     this.loading.set(true);
     this.api.convert(file).subscribe({
       next: (result) => {
