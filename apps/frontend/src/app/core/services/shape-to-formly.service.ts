@@ -11,11 +11,16 @@ import {
 
 @Injectable({ providedIn: "root" })
 export class ShapeToFormlyService {
+  private model: ShaclModel | null = null;
+  private resolving = new Set<string>();
+
   /**
    * Convert a full ShaclModel into wizard steps.
    * Each VicShape becomes a step; constraints become formly fields.
    */
   toSteps(model: ShaclModel): FormlyStep[] {
+    this.model = model;
+    this.resolving.clear();
     return model.shapes
       .filter((shape) => this.hasEditableFields(shape))
       .map((shape) => this.shapeToStep(shape));
@@ -141,16 +146,58 @@ export class ShapeToFormlyService {
     };
   }
 
-  private buildNodeShape(base: FormlyFieldConfig, _prop: ShapeProperties): FormlyFieldConfig {
-    // Children shapes are resolved by the API as nested constraints
-    // For now, render as a nested group placeholder
+  private buildNodeShape(base: FormlyFieldConfig, prop: ShapeProperties): FormlyFieldConfig {
+    const childName = prop.children!;
+
+    // Guard against circular references
+    if (this.resolving.has(childName)) {
+      return {
+        ...base,
+        type: "formly-group",
+        fieldGroup: [],
+        props: { ...base.props, description: `(circular reference to ${childName})` },
+      };
+    }
+
+    // Look up the referenced shape in the model
+    const childShape = this.model?.shapes.find((s) => s.targetClassName === childName);
+    if (!childShape) {
+      return {
+        ...base,
+        type: "formly-group",
+        fieldGroup: [],
+        props: { ...base.props },
+      };
+    }
+
+    // Recursively build child constraints
+    this.resolving.add(childName);
+    const childFields = [...childShape.constraints]
+      .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+      .map((c) => this.toFieldConfig(c));
+    this.resolving.delete(childName);
+
+    // If the field is repeatable, wrap in fieldArray
+    if (prop.maxCount === null || (prop.maxCount !== null && prop.maxCount > 1)) {
+      return {
+        ...base,
+        type: "repeat",
+        props: {
+          ...base.props,
+          maxItems: prop.maxCount,
+          minItems: prop.minCount ?? 0,
+        },
+        fieldArray: {
+          fieldGroup: childFields,
+        },
+      };
+    }
+
     return {
       ...base,
       type: "formly-group",
-      fieldGroup: [],
-      props: {
-        ...base.props,
-      },
+      fieldGroup: childFields,
+      props: { ...base.props },
     };
   }
 
