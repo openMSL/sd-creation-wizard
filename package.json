@@ -8,8 +8,11 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --parallel",
+    "dev:api": "turbo run dev --filter=@sd-creation-wizard/api",
+    "dev:frontend": "turbo run dev --filter=@sd-creation-wizard/frontend",
     "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
     "check-types": "turbo run check-types",
     "lint": "eslint .",
     "format": "prettier --write .",

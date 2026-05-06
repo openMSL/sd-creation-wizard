@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "ng": "ng",
-    "dev": "ng serve",
+    "dev": "ng serve --proxy-config proxy.conf.json",
     "build": "ng build",
     "test": "ng test --watch=false",
     "check-types": "ng build --configuration=development"

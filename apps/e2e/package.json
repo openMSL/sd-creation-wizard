@@ -1,0 +1,14 @@
+{
+  "name": "@sd-creation-wizard/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@sd-creation-wizard/typescript-config": "workspace:*"
+  }
+}

@@ -1,0 +1,35 @@
+import { defineConfig, devices } from "@playwright/test";
+
+export default defineConfig({
+  testDir: "./src",
+  fullyParallel: true,
+  forbidOnly: !!process.env["CI"],
+  retries: process.env["CI"] ? 2 : 0,
+  workers: process.env["CI"] ? 1 : undefined,
+  reporter: [["html", { open: "never" }]],
+  use: {
+    baseURL: "http://localhost:4200",
+    trace: "on-first-retry",
+    screenshot: "only-on-failure",
+  },
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+  ],
+  webServer: [
+    {
+      command: "pnpm --filter @sd-creation-wizard/api run dev",
+      port: 8080,
+      reuseExistingServer: !process.env["CI"],
+      cwd: "../..",
+    },
+    {
+      command: "pnpm --filter @sd-creation-wizard/frontend run dev",
+      port: 4200,
+      reuseExistingServer: !process.env["CI"],
+      cwd: "../..",
+    },
+  ],
+});

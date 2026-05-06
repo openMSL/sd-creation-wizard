@@ -175,8 +175,16 @@ export class ShapeToFormlyService {
     const dt = this.constraintValue(prop.datatype as ClassConstraint | null)?.toLowerCase();
     if (!dt) return "input";
     if (dt.includes("boolean")) return "checkbox";
-    if (dt.includes("integer") || dt.includes("decimal") || dt.includes("float")) return "number";
-    if (dt.includes("date")) return "datepicker";
+    if (
+      dt.includes("integer") ||
+      dt.includes("decimal") ||
+      dt.includes("float") ||
+      dt.includes("double")
+    ) {
+      return "number";
+    }
+    if (dt.includes("date") || dt.includes("datetime")) return "datepicker";
+    if (dt.includes("anyuri") || dt.includes("iri")) return "iri";
     return "input";
   }
 
