@@ -23,7 +23,7 @@ export class ShapeApiService {
   convertAndPrefill(shaclFile: File, jsonLdFile: File): Observable<ResponseShaclJsonPair> {
     const formData = new FormData();
     formData.append("file", shaclFile);
-    formData.append("jsonLdFile", jsonLdFile);
+    formData.append("jsonFile", jsonLdFile);
     return this.http.post<ResponseShaclJsonPair>(`${this.baseUrl}/convertAndPrefillFile`, formData);
   }
 }
