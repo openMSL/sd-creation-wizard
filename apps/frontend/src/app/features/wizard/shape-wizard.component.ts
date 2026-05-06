@@ -7,7 +7,6 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { FormlyModule } from "@ngx-formly/core";
-import { FormlyMaterialModule } from "@ngx-formly/material";
 
 import { ShapeApiService } from "../../core/services/shape-api.service";
 import { ShapeToFormlyService } from "../../core/services/shape-to-formly.service";
@@ -30,7 +29,6 @@ import { ReviewStepComponent } from "./review-step.component";
     MatProgressBarModule,
     MatSnackBarModule,
     FormlyModule,
-    FormlyMaterialModule,
     FileUploadComponent,
     ReviewStepComponent,
   ],
@@ -254,7 +252,7 @@ export class ShapeWizardComponent implements OnInit {
     const formValues: Record<string, Record<string, unknown>> = {};
     const steps = this.steps();
     for (let i = 0; i < steps.length; i++) {
-      formValues[model.shapes[i].targetClassName] = steps[i].form.value as Record<string, unknown>;
+      formValues[steps[i].label] = steps[i].form.value as Record<string, unknown>;
     }
 
     const jsonLd = this.serializer.serialize(formValues, model);

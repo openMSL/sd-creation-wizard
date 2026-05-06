@@ -16,7 +16,19 @@ export class ShapeToFormlyService {
    * Each VicShape becomes a step; constraints become formly fields.
    */
   toSteps(model: ShaclModel): FormlyStep[] {
-    return model.shapes.map((shape) => this.shapeToStep(shape));
+    return model.shapes
+      .filter((shape) => this.hasEditableFields(shape))
+      .map((shape) => this.shapeToStep(shape));
+  }
+
+  /**
+   * A shape is "editable" if it has at least one constraint that produces
+   * a user-visible form field (not just structural references).
+   */
+  private hasEditableFields(shape: VicShape): boolean {
+    return shape.constraints.some(
+      (c) => !c.children && !c.or?.every((branch) => !!branch.children)
+    );
   }
 
   private shapeToStep(shape: VicShape): FormlyStep {
