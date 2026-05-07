@@ -5,6 +5,7 @@ import { NumberField } from "./NumberField";
 import { SelectField } from "./SelectField";
 import { DateField } from "./DateField";
 import { IriField } from "./IriField";
+import { BooleanField } from "./BooleanField";
 import { RepeatField } from "./RepeatField";
 import { FieldGroup } from "./FieldGroup";
 import { UnionField } from "./UnionField";
@@ -33,6 +34,8 @@ export function DynamicField<T extends FieldValues>({
       return <DateField field={field} control={control} name={name} />;
     case "iri":
       return <IriField field={field} control={control} name={name} />;
+    case "boolean":
+      return <BooleanField field={field} control={control as Control} />;
     case "repeat":
       return <RepeatField field={field} control={control} name={name} />;
     case "group":

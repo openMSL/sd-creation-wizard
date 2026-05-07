@@ -6,6 +6,7 @@ export type FieldType =
   | "select"
   | "date"
   | "iri"
+  | "boolean"
   | "union"
   | "repeat"
   | "group";
@@ -40,10 +41,13 @@ export interface WizardStep {
 
 /**
  * Convert a ShaclModel into wizard steps with field descriptors.
+ * Only root shapes (not referenced as children from other shapes) become steps.
  */
 export function shapeToSteps(model: ShaclModel): WizardStep[] {
+  const referencedChildren = collectReferencedChildren(model.shapes);
   const resolving = new Set<string>();
   return model.shapes
+    .filter((shape) => isRootShape(shape, referencedChildren))
     .filter((shape) => hasEditableFields(shape))
     .map((shape) => ({
       id: shape.schema,
@@ -52,10 +56,36 @@ export function shapeToSteps(model: ShaclModel): WizardStep[] {
     }));
 }
 
-function hasEditableFields(shape: VicShape): boolean {
-  return shape.constraints.some(
-    (c) => c.children || !c.or || !c.or.every((branch) => !!branch.children)
+/**
+ * Collect all shape names referenced via `children` or within `sh:or` branches.
+ */
+function collectReferencedChildren(shapes: VicShape[]): Set<string> {
+  const refs = new Set<string>();
+  for (const shape of shapes) {
+    for (const c of shape.constraints) {
+      if (c.children) refs.add(c.children);
+      if (c.or) {
+        for (const branch of c.or) {
+          if (branch.children) refs.add(branch.children);
+        }
+      }
+    }
+  }
+  return refs;
+}
+
+/**
+ * A shape is "root" if it is NOT referenced as a child from any other shape.
+ */
+function isRootShape(shape: VicShape, referencedChildren: Set<string>): boolean {
+  return (
+    !referencedChildren.has(shape.targetClassName) &&
+    !referencedChildren.has(localName(shape.schema))
   );
+}
+
+function hasEditableFields(shape: VicShape): boolean {
+  return shape.constraints.length > 0;
 }
 
 function shapeToFields(
@@ -136,7 +166,8 @@ function buildNodeField(
   const children = shapeToFields(childShape, allShapes, resolving);
   resolving.delete(childName);
 
-  const isRepeat = prop.maxCount === null || (prop.maxCount !== null && prop.maxCount > 1);
+  // Unbounded (maxCount absent/null) or maxCount > 1 means repeatable
+  const isRepeat = prop.maxCount == null || prop.maxCount > 1;
   if (isRepeat) {
     return {
       key,
@@ -146,7 +177,7 @@ function buildNodeField(
       description,
       children,
       minItems: prop.minCount ?? 0,
-      maxItems: prop.maxCount,
+      maxItems: prop.maxCount ?? null,
     };
   }
 
@@ -185,6 +216,7 @@ function resolveFieldType(datatype: ClassConstraint | null): FieldType {
   if (!datatype || !("value" in datatype) || !datatype.value) return "text";
   const dt = datatype.value.toLowerCase();
 
+  if (dt.includes("boolean")) return "boolean";
   if (
     dt.includes("integer") ||
     dt.includes("decimal") ||
