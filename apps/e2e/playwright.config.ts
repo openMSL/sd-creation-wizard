@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env["CI"] ? 1 : undefined,
   reporter: [["html", { open: "never" }]],
   use: {
-    baseURL: "http://localhost:4200",
+    baseURL: "http://localhost:5173",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -26,8 +26,8 @@ export default defineConfig({
       cwd: "../..",
     },
     {
-      command: "pnpm --filter @sd-creation-wizard/frontend run dev",
-      port: 4200,
+      command: "pnpm --filter @sd-creation-wizard/wizard run dev",
+      port: 5173,
       reuseExistingServer: !process.env["CI"],
       cwd: "../..",
     },
