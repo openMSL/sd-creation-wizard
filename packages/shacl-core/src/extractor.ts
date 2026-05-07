@@ -20,12 +20,16 @@ import type {
 export function extractShaclModel(turtleContent: string): ShaclModel {
   const store = new Store();
   const parser = new Parser();
-  const quads = parser.parse(turtleContent);
+  const prefixList: Array<{ alias: string; url: string }> = [];
+
+  const quads = parser.parse(turtleContent, null, (prefix, prefixNode) => {
+    prefixList.push({ alias: prefix, url: prefixNode.value });
+  });
   store.addQuads(quads);
 
   const nav = new RdfNavigator(store);
-  const prefixList = buildPrefixList(parser);
-  const shapes = extractShapes(nav, store, prefixList);
+  const prefixMap = new Map(prefixList.map((p) => [p.url, p.alias]));
+  const shapes = extractShapes(nav, store, prefixMap);
 
   return stripNulls({ prefixList, shapes }) as ShaclModel;
 }
@@ -50,36 +54,18 @@ function stripNulls(obj: unknown): unknown {
 }
 
 /**
- * Build the prefix list from parser-detected prefixes.
+ * Find prefix alias for a namespace URL (O(1) lookup).
  */
-function buildPrefixList(parser: Parser): Array<{ alias: string; url: string }> {
-  // N3 Parser exposes prefixes after parsing
-  const prefixes = (parser as unknown as { _prefixes: Record<string, string> })._prefixes;
-  if (!prefixes) return [];
-
-  return Object.entries(prefixes).map(([alias, url]) => ({ alias, url }));
+function getPrefixAlias(prefixMap: Map<string, string>, namespaceUrl: string): string | null {
+  return prefixMap.get(namespaceUrl) ?? null;
 }
 
 /**
- * Find prefix alias for a namespace URL.
+ * Create a ClassConstraint from a URI using the prefix map.
  */
-function getPrefixAlias(
-  prefixList: Array<{ alias: string; url: string }>,
-  namespaceUrl: string
-): string | null {
-  const entry = prefixList.find((p) => p.url === namespaceUrl);
-  return entry ? entry.alias : null;
-}
-
-/**
- * Create a ClassConstraint from a URI using the prefix list.
- */
-function toClassConstraint(
-  uri: string,
-  prefixList: Array<{ alias: string; url: string }>
-): ClassConstraint {
+function toClassConstraint(uri: string, prefixMap: Map<string, string>): ClassConstraint {
   const ns = namespace(uri);
-  const prefix = getPrefixAlias(prefixList, ns);
+  const prefix = getPrefixAlias(prefixMap, ns);
   return { prefix, value: localName(uri) };
 }
 
@@ -89,7 +75,7 @@ function toClassConstraint(
 function extractShapes(
   nav: RdfNavigator,
   store: Store,
-  prefixList: Array<{ alias: string; url: string }>
+  prefixMap: Map<string, string>
 ): VicShape[] {
   const shapeNodes = nav.subjects(RDF.type, SH.NodeShape);
 
@@ -98,7 +84,7 @@ function extractShapes(
     // Skip blank node shapes at top level
     if (shapeNode.termType !== "NamedNode") continue;
 
-    const shape = constructVicShape(nav, shapeNode, prefixList);
+    const shape = constructVicShape(nav, shapeNode, prefixMap);
     if (shape) shapes.push(shape);
   }
 
@@ -112,16 +98,16 @@ function extractShapes(
 function constructVicShape(
   nav: RdfNavigator,
   shapeNode: Term,
-  prefixList: Array<{ alias: string; url: string }>
+  prefixMap: Map<string, string>
 ): VicShape | null {
   const targetClassNode = nav.outOne(shapeNode, SH.targetClass);
   const targetUri = targetClassNode ? targetClassNode.value : shapeNode.value;
 
   const targetNs = namespace(targetUri);
-  const targetClassPrefix = getPrefixAlias(prefixList, targetNs) ?? "";
+  const targetClassPrefix = getPrefixAlias(prefixMap, targetNs) ?? "";
   const targetClassName = localName(targetUri);
 
-  const constraints = extractProperties(nav, shapeNode, prefixList);
+  const constraints = extractProperties(nav, shapeNode, prefixMap);
 
   return {
     schema: localName(shapeNode.value),
@@ -137,13 +123,13 @@ function constructVicShape(
 function extractProperties(
   nav: RdfNavigator,
   shapeNode: Term,
-  prefixList: Array<{ alias: string; url: string }>
+  prefixMap: Map<string, string>
 ): ShapeProperties[] {
   const propertyNodes = nav.out(shapeNode, SH.property);
   const properties: ShapeProperties[] = [];
 
   for (const propNode of propertyNodes) {
-    const prop = extractSingleProperty(nav, propNode, prefixList);
+    const prop = extractSingleProperty(nav, propNode, prefixMap);
     if (prop) properties.push(prop);
   }
 
@@ -158,18 +144,18 @@ function extractProperties(
 function extractSingleProperty(
   nav: RdfNavigator,
   propNode: Term,
-  prefixList: Array<{ alias: string; url: string }>
+  prefixMap: Map<string, string>
 ): ShapeProperties | null {
   const pathNode = nav.outOne(propNode, SH.path);
 
-  const path = pathNode ? toClassConstraint(pathNode.value, prefixList) : null;
+  const path = pathNode ? toClassConstraint(pathNode.value, prefixMap) : null;
   const name = nav.stringValue(propNode, SH.name) ?? null;
 
   // Datatype (Java always returns a Map — empty {} when not present)
   let datatype: ClassConstraint | Record<string, never> = {};
   const datatypeNode = nav.outOne(propNode, SH.datatype);
   if (datatypeNode) {
-    datatype = toClassConstraint(datatypeNode.value, prefixList);
+    datatype = toClassConstraint(datatypeNode.value, prefixMap);
   }
 
   // NodeKind (overrides datatype if IRI)
@@ -182,7 +168,7 @@ function extractSingleProperty(
   let clazz: ClassConstraint | null = null;
   const classNode = nav.outOne(propNode, SH.class);
   if (classNode) {
-    clazz = toClassConstraint(classNode.value, prefixList);
+    clazz = toClassConstraint(classNode.value, prefixMap);
   }
 
   // Counts and order
@@ -200,10 +186,10 @@ function extractSingleProperty(
   const example = nav.stringValue(propNode, SKOS.example);
 
   // sh:in (enum values — Java always returns a List, empty [] when not present)
-  const inValues = extractInValues(nav, propNode, prefixList);
+  const inValues = extractInValues(nav, propNode, prefixMap);
 
   // sh:or (union constraints)
-  const orValues = extractOrValues(nav, propNode, prefixList);
+  const orValues = extractOrValues(nav, propNode, prefixMap);
 
   // sh:node (nested children — use local name like Java API)
   const nodeRef = nav.outOne(propNode, SH.node);
@@ -240,7 +226,7 @@ function extractSingleProperty(
 function extractInValues(
   nav: RdfNavigator,
   propNode: Term,
-  prefixList: Array<{ alias: string; url: string }>
+  prefixMap: Map<string, string>
 ): ClassConstraint[] {
   const inListHead = nav.outOne(propNode, SH.in);
   if (!inListHead) return [];
@@ -252,7 +238,7 @@ function extractInValues(
     if (item.termType === "Literal") {
       return { prefix: null, value: item.value };
     }
-    return toClassConstraint(item.value, prefixList);
+    return toClassConstraint(item.value, prefixMap);
   });
 }
 
@@ -262,7 +248,7 @@ function extractInValues(
 function extractOrValues(
   nav: RdfNavigator,
   propNode: Term,
-  prefixList: Array<{ alias: string; url: string }>
+  prefixMap: Map<string, string>
 ): ShapeProperties[] | null {
   const orListHead = nav.outOne(propNode, SH.or);
   if (!orListHead) return null;
@@ -277,7 +263,7 @@ function extractOrValues(
     const hasProperty = nav.outOne(orItem, SH.property);
     if (hasAnd || hasProperty) continue;
 
-    const prop = extractOrBranch(nav, orItem, prefixList);
+    const prop = extractOrBranch(nav, orItem, prefixMap);
     if (prop) results.push(prop);
   }
 
@@ -290,12 +276,12 @@ function extractOrValues(
 function extractOrBranch(
   nav: RdfNavigator,
   orItem: Term,
-  prefixList: Array<{ alias: string; url: string }>
+  prefixMap: Map<string, string>
 ): ShapeProperties | null {
   let datatype: ClassConstraint | Record<string, never> = {};
   const datatypeNode = nav.outOne(orItem, SH.datatype);
   if (datatypeNode) {
-    datatype = toClassConstraint(datatypeNode.value, prefixList);
+    datatype = toClassConstraint(datatypeNode.value, prefixMap);
   }
 
   const nodeKindNode = nav.outOne(orItem, SH.nodeKind);
@@ -306,13 +292,13 @@ function extractOrBranch(
   let clazz: ClassConstraint | null = null;
   const classNode = nav.outOne(orItem, SH.class);
   if (classNode) {
-    clazz = toClassConstraint(classNode.value, prefixList);
+    clazz = toClassConstraint(classNode.value, prefixMap);
   }
 
   let path: ClassConstraint | null = null;
   const pathNode = nav.outOne(orItem, SH.path);
   if (pathNode) {
-    path = toClassConstraint(pathNode.value, prefixList);
+    path = toClassConstraint(pathNode.value, prefixMap);
   }
 
   const minCount = nav.intValue(orItem, SH.minCount);

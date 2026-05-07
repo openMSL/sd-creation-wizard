@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { extractShaclModel } from "@sd-creation-wizard/shacl-core";
 import { prefillFromJsonLd } from "./prefill.js";
 
 const SHACL_TTL = `
@@ -26,6 +27,8 @@ const SHACL_TTL = `
     ] .
 `;
 
+const model = extractShaclModel(SHACL_TTL);
+
 describe("prefillFromJsonLd", () => {
   it("matches simple string values from JSON-LD", () => {
     const jsonLd = JSON.stringify({
@@ -33,7 +36,7 @@ describe("prefillFromJsonLd", () => {
       "http://example.org/lastName": "Smith",
     });
 
-    const result = prefillFromJsonLd(SHACL_TTL, jsonLd);
+    const result = prefillFromJsonLd(model, model.prefixList, jsonLd);
     expect(result["http://example.org/firstName"]).toBe("Alice");
     expect(result["http://example.org/lastName"]).toBe("Smith");
   });
@@ -43,7 +46,7 @@ describe("prefillFromJsonLd", () => {
       "http://example.org/age": 25,
     });
 
-    const result = prefillFromJsonLd(SHACL_TTL, jsonLd);
+    const result = prefillFromJsonLd(model, model.prefixList, jsonLd);
     expect(result["http://example.org/age"]).toBe("25");
   });
 
@@ -55,7 +58,7 @@ describe("prefillFromJsonLd", () => {
       },
     });
 
-    const result = prefillFromJsonLd(SHACL_TTL, jsonLd);
+    const result = prefillFromJsonLd(model, model.prefixList, jsonLd);
     expect(result["http://example.org/firstName"]).toBe("Bob");
   });
 
@@ -64,7 +67,7 @@ describe("prefillFromJsonLd", () => {
       "http://example.org/firstName": { "@id": "http://example.org/people/alice" },
     });
 
-    const result = prefillFromJsonLd(SHACL_TTL, jsonLd);
+    const result = prefillFromJsonLd(model, model.prefixList, jsonLd);
     expect(result["http://example.org/firstName"]).toBe("http://example.org/people/alice");
   });
 
@@ -75,7 +78,7 @@ describe("prefillFromJsonLd", () => {
       "http://example.org/email": "alice@example.org",
     });
 
-    const result = prefillFromJsonLd(SHACL_TTL, jsonLd);
+    const result = prefillFromJsonLd(model, model.prefixList, jsonLd);
     expect(result["http://example.org/firstName"]).toBe("Alice");
     expect(result).not.toHaveProperty("http://other.org/unrelated");
     expect(result).not.toHaveProperty("http://example.org/email");
@@ -89,7 +92,7 @@ describe("prefillFromJsonLd", () => {
       },
     });
 
-    const result = prefillFromJsonLd(SHACL_TTL, jsonLd);
+    const result = prefillFromJsonLd(model, model.prefixList, jsonLd);
     expect(result["http://example.org/firstName"]).toBe("Nested");
   });
 
@@ -99,18 +102,18 @@ describe("prefillFromJsonLd", () => {
       { "http://example.org/lastName": "Last" },
     ]);
 
-    const result = prefillFromJsonLd(SHACL_TTL, jsonLd);
+    const result = prefillFromJsonLd(model, model.prefixList, jsonLd);
     expect(result["http://example.org/firstName"]).toBe("First");
     expect(result["http://example.org/lastName"]).toBe("Last");
   });
 
   it("returns empty map for invalid JSON", () => {
-    const result = prefillFromJsonLd(SHACL_TTL, "not json at all {{{");
+    const result = prefillFromJsonLd(model, model.prefixList, "not json at all {{{");
     expect(Object.keys(result)).toHaveLength(0);
   });
 
   it("returns empty map for empty JSON", () => {
-    const result = prefillFromJsonLd(SHACL_TTL, "{}");
+    const result = prefillFromJsonLd(model, model.prefixList, "{}");
     expect(Object.keys(result)).toHaveLength(0);
   });
 
@@ -122,7 +125,7 @@ describe("prefillFromJsonLd", () => {
       "http://example.org/firstName": "Test",
     });
 
-    const result = prefillFromJsonLd(SHACL_TTL, jsonLd);
+    const result = prefillFromJsonLd(model, model.prefixList, jsonLd);
     expect(result["http://example.org/firstName"]).toBe("Test");
     expect(result).not.toHaveProperty("@context");
     expect(result).not.toHaveProperty("@type");

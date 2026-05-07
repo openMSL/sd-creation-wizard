@@ -1,5 +1,4 @@
 import { Injectable } from "@angular/core";
-import { FormGroup } from "@angular/forms";
 import { ClassConstraint, ShapeProperties, ShaclModel, FormlyStep } from "../models/shacl.model";
 
 /**
@@ -17,6 +16,7 @@ export class JsonLdPrefillService {
     steps: FormlyStep[],
     model: ShaclModel
   ): Record<string, unknown>[] {
+    const prefixMap = new Map(model.prefixList.map((p) => [p.alias, p.url]));
     const stepModels: Record<string, unknown>[] = [];
 
     for (let i = 0; i < steps.length; i++) {
@@ -27,7 +27,7 @@ export class JsonLdPrefillService {
       }
 
       const stepModel: Record<string, unknown> = {};
-      this.fillConstraints(shape.constraints, matchedSubjects, stepModel);
+      this.fillConstraints(shape.constraints, matchedSubjects, stepModel, prefixMap);
       stepModels.push(stepModel);
     }
 
@@ -55,11 +55,12 @@ export class JsonLdPrefillService {
   private fillConstraints(
     constraints: ShapeProperties[],
     matched: Record<string, string>,
-    target: Record<string, unknown>
+    target: Record<string, unknown>,
+    prefixMap: Map<string, string>
   ): void {
     for (const constraint of constraints) {
       const key = this.buildKey(constraint.path);
-      const fullUri = this.buildFullUri(constraint.path);
+      const fullUri = this.buildFullUri(constraint.path, prefixMap);
 
       // Try matching by full URI first, then by prefixed key
       const value = matched[fullUri] ?? matched[key];
@@ -89,13 +90,14 @@ export class JsonLdPrefillService {
     return path.value;
   }
 
-  private buildFullUri(_path: ClassConstraint | null): string {
-    // The API's matchedSubjects uses full URIs as keys.
-    // Since we don't have the prefix→URI map at this level,
-    // return the key as-is. The caller should resolve via prefixList.
-    if (!_path) return "unknown";
-    if (_path.prefix) return `${_path.prefix}:${_path.value}`;
-    return _path.value;
+  private buildFullUri(path: ClassConstraint | null, prefixMap: Map<string, string>): string {
+    if (!path) return "unknown";
+    if (path.prefix) {
+      const ns = prefixMap.get(path.prefix);
+      if (ns) return `${ns}${path.value}`;
+      return `${path.prefix}:${path.value}`;
+    }
+    return path.value;
   }
 
   private getDatatypeValue(dt: ClassConstraint | null): string | null {

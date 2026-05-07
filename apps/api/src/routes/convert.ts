@@ -50,7 +50,7 @@ convertRoutes.post("/convertAndPrefillFile", async (c) => {
     const jsonContent = await (jsonFile as File).text();
 
     const shaclModel = extractShaclModel(shaclContent);
-    const matchedSubjects = prefillFromJsonLd(shaclContent, jsonContent);
+    const matchedSubjects = prefillFromJsonLd(shaclModel, shaclModel.prefixList, jsonContent);
 
     const response: ResponseShaclJsonPair = { shaclModel, matchedSubjects };
     return c.json(response);

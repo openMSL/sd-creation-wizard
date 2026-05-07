@@ -57,7 +57,7 @@ export class RepeatFieldType extends FieldType<FieldTypeConfig> {
     this.field.fieldGroup = this.field.fieldGroup ?? [];
     const fieldArray = this.field.fieldArray;
     if (fieldArray && typeof fieldArray === "object") {
-      this.field.fieldGroup.push({ ...fieldArray });
+      this.field.fieldGroup.push(structuredClone(fieldArray));
     }
   }
 

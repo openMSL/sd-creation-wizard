@@ -1,33 +1,27 @@
 /**
  * JSON-LD prefill matching.
- * Parses both SHACL and JSON-LD, matches JSON-LD predicate values to SHACL paths.
+ * Matches JSON-LD property values against SHACL paths from an already-parsed model.
  */
 
-import { Parser, Store } from "n3";
-import { RdfNavigator, SH, RDF } from "@sd-creation-wizard/shacl-core";
+import type { ShaclModel } from "@sd-creation-wizard/shacl-core";
 
 /**
  * Match JSON-LD property values to SHACL shape paths.
+ * Accepts an already-parsed ShaclModel to avoid re-parsing the TTL.
  * Returns a map of predicate URI → value string.
  */
 export function prefillFromJsonLd(
-  shaclTurtle: string,
+  shaclModel: ShaclModel,
+  prefixList: Array<{ alias: string; url: string }>,
   jsonLdContent: string
 ): Record<string, string> {
-  // Parse SHACL to extract all sh:path URIs
-  const shaclStore = new Store();
-  const shaclParser = new Parser();
-  shaclStore.addQuads(shaclParser.parse(shaclTurtle));
-  const shaclNav = new RdfNavigator(shaclStore);
-
+  // Build the set of full path URIs from the model
   const shaclPaths = new Set<string>();
-  const shapeNodes = shaclNav.subjects(RDF.type, SH.NodeShape);
-  for (const shape of shapeNodes) {
-    const properties = shaclNav.out(shape, SH.property);
-    for (const prop of properties) {
-      const pathNode = shaclNav.outOne(prop, SH.path);
-      if (pathNode) {
-        shaclPaths.add(pathNode.value);
+  for (const shape of shaclModel.shapes) {
+    for (const constraint of shape.constraints) {
+      if (constraint.path) {
+        const fullUri = resolveUri(constraint.path.prefix, constraint.path.value, prefixList);
+        shaclPaths.add(fullUri);
       }
     }
   }
@@ -37,13 +31,26 @@ export function prefillFromJsonLd(
 
   try {
     const jsonData = JSON.parse(jsonLdContent);
-    // Walk the JSON-LD document looking for keys that match SHACL paths
     matchJsonLdProperties(jsonData, shaclPaths, matchedSubjects);
   } catch {
     // If JSON-LD parsing fails, return empty matches
   }
 
   return matchedSubjects;
+}
+
+/**
+ * Resolve a prefixed name to a full URI using the prefix list.
+ */
+function resolveUri(
+  prefix: string | null,
+  localName: string,
+  prefixList: Array<{ alias: string; url: string }>
+): string {
+  if (!prefix) return localName;
+  const entry = prefixList.find((p) => p.alias === prefix);
+  if (entry) return `${entry.url}${localName}`;
+  return `${prefix}:${localName}`;
 }
 
 /**
@@ -67,7 +74,6 @@ function matchJsonLdProperties(
   for (const [key, value] of Object.entries(obj)) {
     if (key.startsWith("@")) continue;
 
-    // Check if the key (potentially a prefixed URI) matches a SHACL path
     if (shaclPaths.has(key)) {
       const strValue = extractJsonLdValue(value);
       if (strValue !== null) {

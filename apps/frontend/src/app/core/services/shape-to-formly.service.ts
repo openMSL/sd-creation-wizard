@@ -159,8 +159,10 @@ export class ShapeToFormlyService {
       };
     }
 
-    // Look up the referenced shape in the model
-    const childShape = this.model?.shapes.find((s) => s.targetClassName === childName);
+    // Look up the referenced shape by targetClassName or schema local name
+    const childShape = this.model?.shapes.find(
+      (s) => s.targetClassName === childName || this.localName(s.schema) === childName
+    );
     if (!childShape) {
       return {
         ...base,
@@ -256,5 +258,13 @@ export class ShapeToFormlyService {
   private constraintValue(c: ClassConstraint | null): string | null {
     if (!c) return null;
     return c.value;
+  }
+
+  private localName(uri: string): string {
+    const hashIdx = uri.lastIndexOf("#");
+    if (hashIdx >= 0) return uri.slice(hashIdx + 1);
+    const slashIdx = uri.lastIndexOf("/");
+    if (slashIdx >= 0) return uri.slice(slashIdx + 1);
+    return uri;
   }
 }

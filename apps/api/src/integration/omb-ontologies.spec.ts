@@ -36,9 +36,9 @@ function findShaclFiles(dir: string): string[] {
 
 // Try multiple paths to locate OMB artifacts
 const candidatePaths = [
+  process.env["OMB_ARTIFACTS_PATH"],
   join(__dirname, "../../../../submodules/ontology-management-base/artifacts"),
-  "/home/q413005/workspace/sl-5-8-asset-tools/submodules/ontology-management-base/artifacts",
-];
+].filter(Boolean) as string[];
 
 let shaclFiles: string[] = [];
 for (const candidate of candidatePaths) {

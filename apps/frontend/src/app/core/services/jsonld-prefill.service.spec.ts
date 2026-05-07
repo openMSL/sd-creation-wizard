@@ -141,4 +141,42 @@ describe("JsonLdPrefillService", () => {
     const result = service.prefill({}, steps, model);
     expect(Object.keys(result[0]).length).toBe(0);
   });
+
+  it("should match by full URI when matchedSubjects uses expanded URIs", () => {
+    const model: ShaclModel = {
+      prefixList: [{ alias: "schema", url: "http://schema.org/" }],
+      shapes: [
+        {
+          schema: "PersonShape",
+          targetClassPrefix: "schema",
+          targetClassName: "Person",
+          constraints: [
+            {
+              path: { prefix: "schema", value: "name" },
+              name: "Name",
+              datatype: { prefix: "xsd", value: "string" },
+              clazz: null,
+              minCount: 1,
+              maxCount: 1,
+              order: 1,
+              description: null,
+              example: null,
+              in: [],
+              or: null,
+              validations: [],
+              children: null,
+            },
+          ],
+        },
+      ],
+    };
+
+    const steps: FormlyStep[] = [{ label: "Person", fields: [], form: new FormGroup({}) }];
+
+    // API returns full URIs as keys
+    const matched = { "http://schema.org/name": "Bob" };
+
+    const result = service.prefill(matched, steps, model);
+    expect(result[0]["schema:name"]).toBe("Bob");
+  });
 });
