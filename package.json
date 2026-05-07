@@ -10,7 +10,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "dev:api": "turbo run dev --filter=@sd-creation-wizard/api",
-    "dev:frontend": "turbo run dev --filter=@sd-creation-wizard/frontend",
+    "dev:wizard": "turbo run dev --filter=@sd-creation-wizard/wizard",
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
     "check-types": "turbo run check-types",
@@ -19,15 +19,15 @@
     "format:check": "prettier --check .",
     "clean": "turbo run clean",
     "build:api": "turbo run build --filter=@sd-creation-wizard/api...",
-    "build:frontend": "turbo run build --filter=@sd-creation-wizard/frontend...",
+    "build:wizard": "turbo run build --filter=@sd-creation-wizard/wizard...",
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.{ts,mts}": [
+    "*.{ts,mts,tsx}": [
       "eslint --fix",
       "prettier --write"
     ],
-    "*.{json,md,yml,yaml,html}": [
+    "*.{json,md,yml,yaml,html,css}": [
       "prettier --write"
     ]
   },

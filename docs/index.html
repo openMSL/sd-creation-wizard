@@ -57,9 +57,9 @@
         font-weight: 600;
         margin-left: 0.5rem;
       }
-      .badge-ng {
-        background: #dd0031;
-        color: white;
+      .badge-react {
+        background: #61dafb;
+        color: #1a1a1a;
       }
       .badge-ts {
         background: #3178c6;
@@ -72,7 +72,7 @@
     <p>
       SHACL-driven metadata wizard for the ENVITED-X ecosystem.
       <span class="badge badge-ts">TypeScript</span>
-      <span class="badge badge-ng">Angular 19</span>
+      <span class="badge badge-react">React 19</span>
     </p>
 
     <h2>Overview</h2>
@@ -86,12 +86,12 @@
     <h2>Architecture</h2>
     <pre>
 ┌────────────────────────────────────────────────────────────┐
-│  Frontend (Angular 19, port 4200)                          │
-│    Upload TTL → Material Stepper → ngx-formly forms        │
+│  Wizard (React 19 + Vite, port 5173)                       │
+│    Upload TTL → Stepper → react-hook-form dynamic fields   │
 │    → Review JSON-LD → Export                               │
 │                      │ /api proxy                          │
 ├──────────────────────▼─────────────────────────────────────┤
-│  API (Hono, port 8080)                                     │
+│  API (Hono, port 3007)                                     │
 │    /convertFile         → parse → ShaclModel               │
 │    /convertAndPrefillFile → parse + match JSON-LD values   │
 │    /getAvailableShapes  → cached ontology list             │
@@ -137,6 +137,11 @@
           <td><code>/getJSON/:schema</code></td>
           <td>Retrieve a cached form model by schema name</td>
         </tr>
+        <tr>
+          <td>GET</td>
+          <td><code>/health</code></td>
+          <td>Health check endpoint</td>
+        </tr>
       </tbody>
     </table>
 
@@ -179,7 +184,7 @@
       <thead>
         <tr>
           <th>SHACL Constraint</th>
-          <th>Formly Type</th>
+          <th>Field Type</th>
           <th>Rendered As</th>
         </tr>
       </thead>
@@ -187,22 +192,17 @@
         <tr>
           <td><code>sh:in [...]</code></td>
           <td>select</td>
-          <td>Material dropdown (multi if maxCount &gt; 1)</td>
+          <td>Dropdown (multi if maxCount &gt; 1)</td>
         </tr>
         <tr>
           <td><code>sh:or [...]</code></td>
-          <td>union-field</td>
+          <td>union</td>
           <td>Radio selector → conditional sub-form</td>
         </tr>
         <tr>
           <td><code>sh:maxCount &gt; 1</code></td>
           <td>repeat</td>
-          <td>Dynamic array with add/remove</td>
-        </tr>
-        <tr>
-          <td><code>xsd:boolean</code></td>
-          <td>checkbox</td>
-          <td>Material checkbox</td>
+          <td>Dynamic array with add/remove (useFieldArray)</td>
         </tr>
         <tr>
           <td><code>xsd:integer / xsd:decimal</code></td>
@@ -211,8 +211,8 @@
         </tr>
         <tr>
           <td><code>xsd:date / xsd:dateTime</code></td>
-          <td>datepicker</td>
-          <td>Material datepicker</td>
+          <td>date</td>
+          <td>Date input</td>
         </tr>
         <tr>
           <td><code>xsd:anyURI / sh:nodeKind sh:IRI</code></td>
@@ -220,17 +220,22 @@
           <td>URL input with link icon</td>
         </tr>
         <tr>
+          <td><code>sh:node</code></td>
+          <td>group</td>
+          <td>Nested field group</td>
+        </tr>
+        <tr>
           <td><code>xsd:string</code> (default)</td>
-          <td>input</td>
-          <td>Material text input</td>
+          <td>text</td>
+          <td>Text input</td>
         </tr>
       </tbody>
     </table>
 
     <h2>Development</h2>
     <pre>
-pnpm dev              # Start API + frontend concurrently
-pnpm test             # Unit tests (vitest + karma)
+pnpm dev              # Start API + wizard concurrently
+pnpm test             # Unit tests (vitest)
 pnpm test:e2e         # Playwright E2E tests
 pnpm lint             # ESLint
 pnpm format:check     # Prettier

@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/shacl-core" },
     { "path": "./packages/testing" },
-    { "path": "./apps/api" }
+    { "path": "./apps/api" },
+    { "path": "./apps/wizard" }
   ]
 }
