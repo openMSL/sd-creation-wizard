@@ -28,11 +28,11 @@ export class ShapeToFormlyService {
 
   /**
    * A shape is "editable" if it has at least one constraint that produces
-   * a user-visible form field (not just structural references).
+   * a user-visible form field (leaf fields, nested groups via sh:node, or or-branches with values).
    */
   private hasEditableFields(shape: VicShape): boolean {
     return shape.constraints.some(
-      (c) => !c.children && !c.or?.every((branch) => !!branch.children)
+      (c) => c.children || !c.or || !c.or.every((branch) => !!branch.children)
     );
   }
 
