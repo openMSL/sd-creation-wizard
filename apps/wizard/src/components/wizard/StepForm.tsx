@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { DynamicField } from "@/components/fields/DynamicField";
 import type { WizardStep } from "@/lib/shape-to-fields";
@@ -9,9 +10,14 @@ interface StepFormProps {
 }
 
 export function StepForm({ step, defaultValues, onSubmit }: StepFormProps) {
-  const { control, handleSubmit } = useForm({
+  const { control, handleSubmit, reset } = useForm({
     defaultValues,
   });
+
+  // Reset form when step changes or when prefilled values arrive
+  useEffect(() => {
+    reset(defaultValues);
+  }, [step.id, defaultValues, reset]);
 
   return (
     <form

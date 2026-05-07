@@ -1,17 +1,22 @@
-import { useController, type Control } from "react-hook-form";
+import { useController, type Control, type FieldValues, type Path } from "react-hook-form";
 import type { FieldDescriptor } from "@/lib/shape-to-fields";
 import { FieldWrapper } from "./FieldWrapper";
 
-interface BooleanFieldProps {
+interface BooleanFieldProps<T extends FieldValues> {
   field: FieldDescriptor;
-  control: Control;
+  control: Control<T>;
+  name: Path<T>;
 }
 
-export function BooleanField({ field, control }: BooleanFieldProps) {
+export function BooleanField<T extends FieldValues>({
+  field,
+  control,
+  name,
+}: BooleanFieldProps<T>) {
   const { field: formField } = useController({
-    name: field.key,
+    name,
     control,
-    defaultValue: false,
+    defaultValue: false as never,
   });
 
   return (
@@ -23,7 +28,7 @@ export function BooleanField({ field, control }: BooleanFieldProps) {
           onChange={(e) => formField.onChange(e.target.checked)}
           className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
         />
-        <span className="text-sm text-foreground">{field.label}</span>
+        <span className="text-sm text-foreground">{formField.value ? "Yes" : "No"}</span>
       </label>
     </FieldWrapper>
   );

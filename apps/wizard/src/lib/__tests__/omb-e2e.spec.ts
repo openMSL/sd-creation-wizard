@@ -185,7 +185,7 @@ describe("OMB Ontology End-to-End Wizard Integration", () => {
         stepValues[step.label] = autoFillStep(step);
       }
 
-      const jsonLd = serializeToJsonLd(stepValues, model);
+      const jsonLd = serializeToJsonLd(stepValues, model, steps);
       expect(jsonLd).toBeTruthy();
 
       // Must be valid JSON

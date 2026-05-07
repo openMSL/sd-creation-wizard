@@ -10,6 +10,35 @@ interface Props<T extends FieldValues> {
   name: Path<T>;
 }
 
+/**
+ * Build a seeded default structure for a new repeat item.
+ * Instead of appending empty `{}`, we create an object with keys
+ * matching each child field's key set to appropriate defaults.
+ */
+function buildItemSeed(children: FieldDescriptor[]): Record<string, unknown> {
+  const seed: Record<string, unknown> = {};
+  for (const child of children) {
+    switch (child.type) {
+      case "boolean":
+        seed[child.key] = false;
+        break;
+      case "number":
+        seed[child.key] = undefined;
+        break;
+      case "repeat":
+        seed[child.key] = [];
+        break;
+      case "group":
+        seed[child.key] = child.children ? buildItemSeed(child.children) : {};
+        break;
+      default:
+        seed[child.key] = "";
+        break;
+    }
+  }
+  return seed;
+}
+
 export function RepeatField<T extends FieldValues>({ field, control, name }: Props<T>) {
   const { fields, append, remove } = useFieldArray({
     control,
@@ -19,6 +48,7 @@ export function RepeatField<T extends FieldValues>({ field, control, name }: Pro
 
   const canAdd = field.maxItems == null || fields.length < field.maxItems;
   const canRemove = fields.length > (field.minItems ?? 0);
+  const children = field.children ?? [];
 
   return (
     <div className="space-y-3" data-testid={`field-${field.key}`}>
@@ -31,7 +61,7 @@ export function RepeatField<T extends FieldValues>({ field, control, name }: Pro
           type="button"
           variant="secondary"
           size="sm"
-          onClick={() => append({} as never)}
+          onClick={() => append(buildItemSeed(children) as never)}
           disabled={!canAdd}
         >
           <Plus className="w-3.5 h-3.5 mr-1" /> Add
@@ -49,7 +79,7 @@ export function RepeatField<T extends FieldValues>({ field, control, name }: Pro
               <Trash2 className="w-4 h-4" />
             </button>
           )}
-          {field.children?.map((child) => (
+          {children.map((child) => (
             <DynamicField
               key={child.key}
               field={child}
@@ -61,7 +91,9 @@ export function RepeatField<T extends FieldValues>({ field, control, name }: Pro
       ))}
 
       {fields.length === 0 && (
-        <p className="text-sm text-muted-foreground italic">No items yet. Click "Add" to start.</p>
+        <p className="text-sm text-muted-foreground italic">
+          No items yet. Click &quot;Add&quot; to start.
+        </p>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import type { Control, FieldValues, Path } from "react-hook-form";
+import type { FieldValues, Path, Control } from "react-hook-form";
 import type { FieldDescriptor } from "@/lib/shape-to-fields";
 import { TextField } from "./TextField";
 import { NumberField } from "./NumberField";
@@ -35,7 +35,7 @@ export function DynamicField<T extends FieldValues>({
     case "iri":
       return <IriField field={field} control={control} name={name} />;
     case "boolean":
-      return <BooleanField field={field} control={control as Control} />;
+      return <BooleanField field={field} control={control} name={name} />;
     case "repeat":
       return <RepeatField field={field} control={control} name={name} />;
     case "group":
