@@ -41,7 +41,7 @@ export function extractShaclModel(turtleContent: string): ShaclModel {
  */
 function stripNulls(obj: unknown): unknown {
   if (obj === null || obj === undefined) return undefined;
-  if (Array.isArray(obj)) return obj.map(stripNulls);
+  if (Array.isArray(obj)) return obj.map(stripNulls).filter((v) => v !== undefined);
   if (typeof obj === "object") {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
@@ -272,6 +272,7 @@ function extractOrValues(
 
 /**
  * Extract a single sh:or branch's constraints.
+ * Now includes name, description, in values, and validations (matching main property extraction).
  */
 function extractOrBranch(
   nav: RdfNavigator,
@@ -307,19 +308,29 @@ function extractOrBranch(
   const nodeRef = nav.outOne(orItem, SH.node);
   const children = nodeRef ? localName(nodeRef.value) : null;
 
+  // Extract name and description (previously missing)
+  const name = nav.stringValue(orItem, SH.name) ?? null;
+  const description = readMultiLanguageProperty(nav, orItem, SH.description);
+
+  // Extract sh:in values (previously missing)
+  const inValues = extractInValues(nav, orItem, prefixMap);
+
+  // Extract validations (previously missing)
+  const validations = extractValidations(nav, orItem);
+
   return {
     path,
-    name: null,
+    name,
     datatype,
     clazz,
     minCount,
     maxCount,
     order: null,
-    description: null,
+    description: description && Object.keys(description).length > 0 ? description : null,
     example: null,
-    in: [],
+    in: inValues,
     or: null,
-    validations: [],
+    validations,
     children,
   };
 }
@@ -370,6 +381,8 @@ function readMultiLanguageProperty(
   const result: Record<string, string> = {};
   for (const obj of objects) {
     if (obj.termType === "Literal") {
+      // Use the literal's language tag; default to "en" for untagged literals
+      // (matches Java API behavior where plain strings are treated as English)
       const lang = (obj as { language?: string }).language || "en";
       result[lang] = obj.value;
     } else {
