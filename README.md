@@ -65,8 +65,8 @@ pnpm check-types      # TypeScript type checking
 - **Dynamic forms** from SHACL shapes via react-hook-form + custom renderer
 - **Step-based navigation** — one step per target class (Tailwind + Radix UI)
 - **Field types**: text input, select (sh:in), number (integer/decimal),
-  date (xsd:date), IRI reference (xsd:anyURI), repeat (useFieldArray),
-  group (sh:node nesting), union (sh:or)
+  date (xsd:date), boolean (xsd:boolean), IRI reference (xsd:anyURI),
+  repeat (useFieldArray), group (sh:node nesting), union (sh:or)
 - **JSON-LD prefill** — upload existing metadata to pre-populate forms
 - **Export** — download generated JSON-LD with proper @context and typed values
 - **Dark mode** — supports envited-x design system color palette
