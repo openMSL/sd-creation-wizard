@@ -9,6 +9,8 @@ interface WizardSession {
   shaclContent: string;
   jsonLdContent: string;
   outputPath: string;
+  provenanceContent: string;
+  assetName: string;
   createdAt: number;
   exported: boolean;
 }
@@ -24,7 +26,9 @@ sessionRoutes.post("/session", async (c) => {
   const body = await c.req.parseBody();
   const shaclFile = body["shaclFile"];
   const jsonLdFile = body["jsonLdFile"];
+  const provenanceFile = body["provenanceFile"];
   const outputPath = body["outputPath"];
+  const assetName = body["assetName"];
 
   if (!shaclFile || typeof shaclFile === "string") {
     return c.text("Error: No SHACL file uploaded", 400);
@@ -36,16 +40,27 @@ sessionRoutes.post("/session", async (c) => {
   const shaclContent = await (shaclFile as File).text();
   const jsonLdContent =
     jsonLdFile && typeof jsonLdFile !== "string" ? await (jsonLdFile as File).text() : "";
+  const provenanceContent =
+    provenanceFile && typeof provenanceFile !== "string"
+      ? await (provenanceFile as File).text()
+      : "";
 
   currentSession = {
     shaclContent,
     jsonLdContent,
     outputPath,
+    provenanceContent,
+    assetName: typeof assetName === "string" ? assetName : "",
     createdAt: Date.now(),
     exported: false,
   };
 
-  return c.json({ status: "ok", hasJsonLd: jsonLdContent.length > 0 });
+  return c.json({
+    status: "ok",
+    hasJsonLd: jsonLdContent.length > 0,
+    hasProvenance: provenanceContent.length > 0,
+    assetName: currentSession.assetName,
+  });
 });
 
 /**
@@ -61,6 +76,8 @@ sessionRoutes.get("/session", (c) => {
     active: true,
     shaclContent: currentSession.shaclContent,
     jsonLdContent: currentSession.jsonLdContent || null,
+    provenanceContent: currentSession.provenanceContent || null,
+    assetName: currentSession.assetName || null,
     exported: currentSession.exported,
   });
 });

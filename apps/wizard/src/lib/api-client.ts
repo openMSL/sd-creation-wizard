@@ -34,6 +34,8 @@ export interface SessionState {
   active: boolean;
   shaclContent?: string;
   jsonLdContent?: string;
+  provenanceContent?: string;
+  assetName?: string;
 }
 
 export async function getSession(): Promise<SessionState> {

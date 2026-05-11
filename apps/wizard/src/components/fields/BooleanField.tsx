@@ -1,17 +1,20 @@
 import { useController, type Control, type FieldValues, type Path } from "react-hook-form";
 import type { FieldDescriptor } from "@/lib/shape-to-fields";
+import type { FieldProvenance } from "@/types";
 import { FieldWrapper } from "./FieldWrapper";
 
 interface BooleanFieldProps<T extends FieldValues> {
   field: FieldDescriptor;
   control: Control<T>;
   name: Path<T>;
+  provenance?: FieldProvenance;
 }
 
 export function BooleanField<T extends FieldValues>({
   field,
   control,
   name,
+  provenance,
 }: BooleanFieldProps<T>) {
   const { field: formField } = useController({
     name,
@@ -20,7 +23,12 @@ export function BooleanField<T extends FieldValues>({
   });
 
   return (
-    <FieldWrapper label={field.label} required={field.required} description={field.description}>
+    <FieldWrapper
+      label={field.label}
+      required={field.required}
+      description={field.description}
+      provenance={provenance}
+    >
       <label className="flex items-center gap-2 cursor-pointer">
         <input
           type="checkbox"
