@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, createContext, useContext } from "react";
 import type { ShaclModel, ProvenanceData } from "@/types";
+import type { QueueInfo } from "@/lib/api-client";
 import { shapeToSteps, type WizardStep } from "@/lib/shape-to-fields";
 import { serializeToJsonLd } from "@/lib/jsonld-serializer";
 import { buildPrefillValues } from "@/lib/jsonld-prefill";
@@ -12,7 +13,7 @@ import { WizardStepper } from "./WizardStepper";
 import { ReviewStep } from "./ReviewStep";
 import { StepForm } from "./StepForm";
 import { Button } from "@/components/ui/Button";
-import { Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
 
 export const ProvenanceContext = createContext<ProvenanceData | null>(null);
 export const useProvenance = () => useContext(ProvenanceContext);
@@ -27,6 +28,8 @@ export function WizardPage() {
   const [provenance, setProvenance] = useState<ProvenanceData | null>(null);
   const [assetName, setAssetName] = useState<string | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [queueInfo, setQueueInfo] = useState<QueueInfo | null>(null);
+  const [queueComplete, setQueueComplete] = useState(false);
 
   const convert = useConvert();
   const convertAndPrefill = useConvertAndPrefill();
@@ -37,11 +40,12 @@ export function WizardPage() {
   useEffect(() => {
     if (sessionLoaded || !session.data?.active || model) return;
 
-    const { shaclContent, jsonLdContent, provenanceContent, assetName: name } = session.data;
+    const { shaclContent, jsonLdContent, provenanceContent, assetName: name, queue } = session.data;
     if (!shaclContent) return;
 
     setSessionLoaded(true);
     if (name) setAssetName(name);
+    if (queue) setQueueInfo(queue);
 
     if (provenanceContent) {
       try {
@@ -140,6 +144,18 @@ export function WizardPage() {
     [shaclFile, convertAndPrefill]
   );
 
+  // Reload the session data for the next queue item
+  const loadNextQueueItem = useCallback(() => {
+    setModel(null);
+    setSteps([]);
+    setCurrentStep(0);
+    setDefaultValues({});
+    setProvenance(null);
+    setAssetName(null);
+    setSessionLoaded(false);
+    session.refetch();
+  }, [session]);
+
   const handleExport = useCallback(
     (formValues: Record<string, Record<string, unknown>>) => {
       if (!model) return;
@@ -148,6 +164,17 @@ export function WizardPage() {
       // If loaded from a pipeline session, export back to the session API
       if (sessionLoaded) {
         exportSession.mutate(jsonLd, {
+          onSuccess: (result) => {
+            // In queue mode, export auto-advances; reload to get next asset
+            if (result.queue) {
+              setQueueInfo(result.queue);
+              if (result.queue.allExported) {
+                setQueueComplete(true);
+              } else if (result.queue.advanced) {
+                loadNextQueueItem();
+              }
+            }
+          },
           onError: (err) => {
             setError(err.message || "Failed to export to session");
           },
@@ -163,10 +190,32 @@ export function WizardPage() {
       a.click();
       URL.revokeObjectURL(url);
     },
-    [model, sessionLoaded, assetName, exportSession]
+    [model, sessionLoaded, assetName, exportSession, loadNextQueueItem]
   );
 
   const isLoading = convert.isPending || convertAndPrefill.isPending;
+
+  // Queue completion screen
+  if (queueComplete && queueInfo) {
+    return (
+      <div className="max-w-xl mx-auto space-y-6 text-center">
+        <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
+        <h2 className="text-2xl font-bold">Review Complete</h2>
+        <p className="text-muted-foreground">
+          All {queueInfo.total} assets have been reviewed and exported.
+        </p>
+        <div className="bg-muted rounded-md p-4 text-left space-y-1">
+          <p className="text-sm font-medium">Summary</p>
+          <p className="text-sm text-muted-foreground">
+            {queueInfo.completed} of {queueInfo.total} assets exported
+          </p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          You can close this browser tab. The pipeline will detect completion automatically.
+        </p>
+      </div>
+    );
+  }
 
   if (!model) {
     return (
@@ -217,6 +266,24 @@ export function WizardPage() {
   return (
     <ProvenanceContext.Provider value={provenance}>
       <div className="max-w-3xl mx-auto">
+        {queueInfo && (
+          <div className="mb-4 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">
+                Asset {queueInfo.current + 1} of {queueInfo.total}
+              </span>
+              <span className="text-muted-foreground">
+                {queueInfo.completed} reviewed
+              </span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-300"
+                style={{ width: `${((queueInfo.current + 1) / queueInfo.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
         {assetName && (
           <div className="mb-4 flex items-center gap-2 rounded-md bg-muted px-4 py-2 border border-border">
             <span className="text-sm font-medium text-muted-foreground">Asset:</span>
@@ -248,6 +315,7 @@ export function WizardPage() {
           model={model}
           onExport={handleExport}
           provenance={provenance}
+          queueInfo={queueInfo}
         />
       </div>
     </ProvenanceContext.Provider>
@@ -262,6 +330,7 @@ interface WizardContentProps {
   model: ShaclModel;
   onExport: (values: Record<string, Record<string, unknown>>) => void;
   provenance: ProvenanceData | null;
+  queueInfo: QueueInfo | null;
 }
 
 function WizardContent({
@@ -272,6 +341,7 @@ function WizardContent({
   model,
   onExport,
   provenance,
+  queueInfo,
 }: WizardContentProps) {
   const [formValues, setFormValues] = useState<Record<string, Record<string, unknown>>>({});
 
@@ -287,6 +357,11 @@ function WizardContent({
 
   const jsonLd = model ? serializeToJsonLd({ ...formValues }, model) : "";
 
+  const isLastInQueue = queueInfo ? queueInfo.current >= queueInfo.total - 1 : false;
+  const exportLabel = queueInfo
+    ? isLastInQueue ? "Export & Finish" : "Export & Next Asset"
+    : "Export JSON-LD";
+
   if (isReview) {
     return (
       <div className="space-y-6">
@@ -296,7 +371,7 @@ function WizardContent({
             <ChevronLeft className="w-4 h-4 mr-1" /> Back
           </Button>
           <Button onClick={() => onExport(formValues)}>
-            <Download className="w-4 h-4 mr-1" /> Export JSON-LD
+            <Download className="w-4 h-4 mr-1" /> {exportLabel}
           </Button>
         </div>
       </div>

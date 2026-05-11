@@ -30,12 +30,26 @@ export async function convertAndPrefillFile(
   return res.json();
 }
 
+export interface QueueInfo {
+  total: number;
+  current: number;
+  completed: number;
+}
+
 export interface SessionState {
   active: boolean;
   shaclContent?: string;
   jsonLdContent?: string;
   provenanceContent?: string;
   assetName?: string;
+  exported?: boolean;
+  queue?: QueueInfo;
+}
+
+export interface ExportResult {
+  status: string;
+  path: string;
+  queue?: QueueInfo & { allExported: boolean; advanced: boolean };
 }
 
 export async function getSession(): Promise<SessionState> {
@@ -44,12 +58,18 @@ export async function getSession(): Promise<SessionState> {
   return res.json();
 }
 
-export async function exportToSession(jsonLd: string): Promise<{ path: string }> {
+export async function exportToSession(jsonLd: string): Promise<ExportResult> {
   const res = await fetch(`${API_BASE}/session/export`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content: jsonLd }),
+    body: JSON.stringify({ jsonLd }),
   });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function advanceQueue(direction: "next" | "prev"): Promise<{ status: string; current: number; assetName?: string }> {
+  const res = await fetch(`${API_BASE}/session/queue/${direction}`, { method: "POST" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
