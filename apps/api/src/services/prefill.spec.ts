@@ -131,4 +131,52 @@ describe("prefillFromJsonLd", () => {
     expect(result).not.toHaveProperty("@type");
     expect(result).not.toHaveProperty("@id");
   });
+
+  it("matches prefixed keys using the prefix list", () => {
+    const jsonLd = JSON.stringify({
+      "ex:firstName": "PrefixAlice",
+      "ex:age": 30,
+    });
+
+    const result = prefillFromJsonLd(model, model.prefixList, jsonLd);
+    expect(result["http://example.org/firstName"]).toBe("PrefixAlice");
+    expect(result["http://example.org/age"]).toBe("30");
+  });
+
+  it("matches bare local names against SHACL path local names", () => {
+    const jsonLd = JSON.stringify({
+      "@type": "ex:Person",
+      "ex:details": {
+        "firstName": "BareName",
+        "lastName": "LocalOnly",
+      },
+    });
+
+    const result = prefillFromJsonLd(model, model.prefixList, jsonLd);
+    expect(result["http://example.org/firstName"]).toBe("BareName");
+    expect(result["http://example.org/lastName"]).toBe("LocalOnly");
+  });
+
+  it("matches nested prefixed keys (pipeline format)", () => {
+    const jsonLd = JSON.stringify({
+      "ex:hasPerson": {
+        "@type": "ex:Person",
+        "ex:firstName": "Nested",
+        "age": 42,
+      },
+    });
+
+    const result = prefillFromJsonLd(model, model.prefixList, jsonLd);
+    expect(result["http://example.org/firstName"]).toBe("Nested");
+    expect(result["http://example.org/age"]).toBe("42");
+  });
+
+  it("extracts values from arrays", () => {
+    const jsonLd = JSON.stringify({
+      "http://example.org/firstName": ["Alice", "Bob"],
+    });
+
+    const result = prefillFromJsonLd(model, model.prefixList, jsonLd);
+    expect(result["http://example.org/firstName"]).toBe("Alice, Bob");
+  });
 });

@@ -53,7 +53,8 @@ export function shapeToSteps(model: ShaclModel): WizardStep[] {
       id: shape.schema,
       label: shape.targetClassName,
       fields: shapeToFields(shape, model.shapes, resolving),
-    }));
+    }))
+    .filter((step) => hasVisibleFields(step.fields));
 }
 
 /**
@@ -86,6 +87,24 @@ function isRootShape(shape: VicShape, referencedChildren: Set<string>): boolean 
 
 function hasEditableFields(shape: VicShape): boolean {
   return shape.constraints.length > 0;
+}
+
+/**
+ * Check whether a resolved field list contains at least one visible input.
+ * Groups/repeats with no children are purely structural (e.g. validation-only
+ * sh:node constraints) and should not produce a wizard step.
+ */
+function hasVisibleFields(fields: FieldDescriptor[]): boolean {
+  for (const f of fields) {
+    if (f.type === "group" || f.type === "repeat") {
+      if (f.children && hasVisibleFields(f.children)) return true;
+    } else if (f.type === "union") {
+      if (f.branches?.some((branch) => hasVisibleFields(branch))) return true;
+    } else {
+      return true;
+    }
+  }
+  return false;
 }
 
 function shapeToFields(
